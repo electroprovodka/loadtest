@@ -3,6 +3,7 @@ from collections import defaultdict
 import signal
 from contextlib import suppress
 
+from counter import Counter
 from report import Report
 from utils import Cancel
 from worker import Worker
@@ -10,14 +11,15 @@ from timer import Timer
 
 
 class Runner:
-    def __init__(self, workers_count, coroutine, duration=None, loop=None):
+    def __init__(self, workers_count, coroutine, duration=None, max_runs=None, loop=None):
         self.workers_count = workers_count
         self.coroutine = coroutine
         self.workers = []
         self.tasks = []
         self.canceler = Cancel()
         self.timer = Timer(duration=duration)
-        self.report = Report()
+        self.counter = Counter(max_runs=max_runs)
+        self.report = Report(self.timer, self.counter)
         self.loop = loop or asyncio.get_event_loop()
 
     def shutdown(self, signal, frame):
@@ -34,7 +36,7 @@ class Runner:
         return asyncio.gather(*tasks, loop=self.loop, return_exceptions=True)
 
     def create_worker(self, wid):
-        return Worker(self.loop, wid, self.coroutine, self.canceler, self.report, self.timer)
+        return Worker(self.loop, wid, self.coroutine, self.canceler, self.timer, self.counter, self.report)
 
     def run(self):
         signal.signal(signal.SIGINT, self.shutdown)

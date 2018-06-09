@@ -3,11 +3,23 @@ import time
 
 class Timer:
     def __init__(self, duration=None):
-        self.duration = duration
-        self.time = time.time()
+        self._duration = duration
+        self._time = time.time()
 
     @property
     def finished(self):
-        if self.duration is None:
+        if self._duration is None:
             return False
-        return time.time() - self.time > self.duration
+        return time.time() - self._time > self._duration
+
+    @property
+    def start_time(self):
+        return self._time
+
+    @property
+    def duration(self):
+        return self._duration
+
+    @property
+    def current_duration(self):
+        return time.time() - self._time

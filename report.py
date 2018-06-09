@@ -1,35 +1,27 @@
 from collections import defaultdict
 
-import time
-
 
 class Report:
-    def __init__(self):
-        self._report = defaultdict(list)
-        self._success = 0
-        self._fail = 0
-        self._counter = 0
-        self._start = time.time()
+    def __init__(self, timer, counter):
+        self._timer = timer
+        self._counter = counter
+        self._report = defaultdict(int)
 
-    def success(self):
-        self._counter += 1
-        self._success += 1
-
-    def fail(self):
-        self._fail += 1
-        self._counter += 1
-
-    def set(self, key, value):
-        self._report[key].append(value)
+    def set(self, wid):
+        self._report[wid] += 1
 
     def __str__(self):
-        workers_stats = sorted([(key, len(value)) for key, value in self._report.items()], key=lambda x: x[0])
+        workers_stats = sorted(self._report.items(), key=lambda x: x[0])
         workers_str = '\n'.join(map(lambda x: f'Worker #{x[0]}: {x[1]}', workers_stats))
-        duration = time.time() - self._start
-        return f"Total runs: {self._counter}\n" + \
+        duration = self._timer.current_duration
+        count = self._counter.count
+        success_count = self._counter.success_count
+        if not count:
+            return 'Total runs: 0'
+        return f"Total runs: {count}\n" + \
             f"Duration: {duration}\n" + \
-            f"RPS: {int(self._counter/duration)}\n" + \
-            f"Successes: {self._success}\n" + \
-            f"Success Rate: {round(self._success/self._counter, 4)}\n" + \
-            f"Stats per worker:\n" + \
+            f"RPS: {int(count/duration)}\n" + \
+            f"Successes: {success_count}\n" + \
+            f"Success Rate: {round(success_count/count, 2)}\n" + \
+            f"Runs per worker:\n" + \
             f"{workers_str}"

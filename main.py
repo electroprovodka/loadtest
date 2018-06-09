@@ -13,6 +13,6 @@ async def coroutine(session):
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    runner = Runner(20, coroutine, duration=20, loop=loop)
+    runner = Runner(200, coroutine, duration=120, max_runs=150000, loop=loop)
     result = runner.run()
     print(str(result))
