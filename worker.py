@@ -1,25 +1,24 @@
 import aiohttp
+import asyncio
 
 
 class Worker:
-    def __init__(self, loop, id, coroutine, canceler, timer, counter, report):
+    def __init__(self, loop, id, coroutine, manager):
         self.id = id
         self.coroutine = coroutine
-        self.canceler = canceler
-        self.report = report
         self.loop = loop
-        self.timer = timer
-        self.counter = counter
+        self.manager = manager
 
     def is_active(self):
-        return not (self.canceler.cancelled or self.timer.finished or self.counter.finished)
+        return not self.manager.finished(self.id)
 
     async def run(self):
         async with aiohttp.ClientSession(loop=self.loop) as session:
             while self.is_active():
+                self.manager.inc(self.id)
                 result = await self.coroutine(session)
                 if result is True:
-                    self.counter.success()
+                    self.manager.success(self.id)
                 else:
-                    self.counter.fail()
-                self.report.set(self.id)
+                    self.manager.fail(self.id)
+                await asyncio.sleep(0, loop=self.loop)
