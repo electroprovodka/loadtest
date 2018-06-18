@@ -22,7 +22,7 @@ class Report:
         rps = count / period
         success_rate = round(success / count, 2) if count > 0 else 0
 
-        print(f'\rRPS: {int(rps)} | SUCCESS RATE: {success_rate}', end='')
+        print(f'RPS: {int(rps)} | SUCCESS RATE: {success_rate}'.ljust(40, ' '), end='\r')
         self._counter.clear_period_values()
         self._print_time = current_time
         await asyncio.sleep(self._period)

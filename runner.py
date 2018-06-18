@@ -1,19 +1,15 @@
 import asyncio
-from collections import defaultdict
-import signal
 from contextlib import suppress
+from functools import partial
+import signal
 
-from counter import Counter
-from report import Report
-from utils import Cancel
 from worker import Worker
-from timer import Timer
 from manager import Manager
 
 
 class Runner:
     def __init__(self, workers_count, coroutine, duration=None, max_runs=None, max_runs_per_worker=None,
-                 until_first_fail = False, loop=None):
+                 until_first_fail=False, loop=None):
         self.workers_count = workers_count
         self.coroutine = coroutine
         self.workers = []
@@ -37,9 +33,16 @@ class Runner:
     def create_worker(self, wid):
         return Worker(self.loop, wid, self.coroutine, self.manager)
 
-    def run(self):
+    def setup_signal_handlers(self):
         signal.signal(signal.SIGINT, self.shutdown)
         signal.signal(signal.SIGTERM, self.shutdown)
+        handler = partial(self.shutdown, None, None)
+        self.loop.add_signal_handler(signal.SIGINT, handler)
+        self.loop.add_signal_handler(signal.SIGTERM, handler)
+
+    def run(self):
+        self.setup_signal_handlers()
+
         self.workers = [self.create_worker(i) for i in range(self.workers_count)]
         tasks = [self.ensure_future(w.run()) for w in self.workers]
         tasks.append(self.ensure_future(self.manager.print_stats()))
