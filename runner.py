@@ -9,13 +9,15 @@ from manager import Manager
 
 class Runner:
     def __init__(self, workers_count, coroutine, duration=None, max_runs=None, max_runs_per_worker=None,
-                 until_first_fail=False, loop=None):
+                 until_first_fail=False, timeout=None, session_setup=None, loop=None):
         self.workers_count = workers_count
         self.coroutine = coroutine
         self.workers = []
         self.tasks = []
         self.manager = Manager(duration, max_runs, max_runs_per_worker, until_first_fail)
         self.loop = loop or asyncio.get_event_loop()
+        self.timeout = timeout
+        self.session_setup = session_setup
 
     def shutdown(self, signal, frame):
         self.manager.cancel()
@@ -31,7 +33,7 @@ class Runner:
         return asyncio.gather(*tasks, loop=self.loop, return_exceptions=True)
 
     def create_worker(self, wid):
-        return Worker(self.loop, wid, self.coroutine, self.manager)
+        return Worker(self.loop, wid, self.coroutine, self.manager, self.timeout, self.session_setup)
 
     def setup_signal_handlers(self):
         signal.signal(signal.SIGINT, self.shutdown)
@@ -50,6 +52,7 @@ class Runner:
         try:
             self.loop.run_until_complete(self.gather(*tasks))
         finally:
-            self.loop.run_until_complete(self.ensure_future(asyncio.sleep(0, loop=self.loop)))
+            # Wait until all SSL sessions are closed
+            self.loop.run_until_complete(self.ensure_future(asyncio.sleep(0.025, loop=self.loop)))
             self.loop.close()
         return self.manager.report
