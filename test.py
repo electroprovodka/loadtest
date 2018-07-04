@@ -1,7 +1,6 @@
 async def coroutine(session):
-    async with session.get('http://example.com') as response:
-        data = await response.content.read(1024)
-        return response.status == 200
+    async with session.get('http://127.0.0.1:8001/') as response:
+        return response.status
 
 
 def session_setup():
